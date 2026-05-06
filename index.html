@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Sandys Finanzas · Boutique</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- SheetJS -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+/* ===================== TOKENS ===================== */
+:root {
+  --teal-deep:   #1a3d3a;
+  --teal-mid:    #2c5a55;
+  --teal-light:  #3d7a74;
+  --gold:        #c9a84c;
+  --gold-light:  #e8c97a;
+  --cream:       #f8f4ee;
+  --cream-dark:  #ede8df;
+  --surface:     #ffffff;
+  --surface2:    #f4f1ec;
+  --text-main:   #1a2e2d;
+  --text-soft:   #5a7470;
+  --text-muted:  #8fa8a5;
+  --danger:      #c0392b;
+  --success:     #1e6f4f;
+  --shadow-sm:   0 2px 12px rgba(26,61,58,.07);
+  --shadow-md:   0 8px 28px rgba(26,61,58,.12);
+  --shadow-lg:   0 20px 50px rgba(26,61,58,.18);
+  --radius-sm:   12px;
+  --radius-md:   20px;
+  --radius-lg:   32px;
+  --sidebar-w:   240px;
+  --nav-h:       68px;
+  --transition:  .25s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --cream:       #0e1f1e;
+  --cream-dark:  #162322;
+  --surface:     #1c2f2d;
+  --surface2:    #243433;
+  --text-main:   #e8ede8;
+  --text-soft:   #98b5b2;
+  --text-muted:  #5e8581;
+  --shadow-sm:   0 2px 12px rgba(0,0,0,.25);
+  --shadow-md:   0 8px 28px rgba(0,0,0,.35);
+}
+
+/* ===================== RESET ===================== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text-main);
+  transition: background var(--transition), color var(--transition);
+  min-height: 100vh;
+}
+
+/* ===================== LOGIN ===================== */
+#loginScreen {
+  position: fixed; inset: 0; z-index: 999;
+  background: linear-gradient(145deg, var(--teal-deep) 0%, #0e2828 60%, #1a3d3a 100%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .5s;
+}
+#loginScreen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 70%, rgba(201,168,76,.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.login-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 48px 36px 40px;
+  width: 90%; max-width: 400px;
+  text-align: center;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(201,168,76,.15);
+  animation: slideUp .45s ease both;
+  position: relative;
+}
+.login-card::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  border-radius: 0 0 4px 4px;
+}
+.login-logo-wrap {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal-mid));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(26,61,58,.3);
+  overflow: hidden;
+}
+.login-logo-wrap img { width: 70px; height: 70px; object-fit: contain; }
+.login-logo-wrap .logo-fallback {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem; font-weight: 700;
+  color: var(--gold); line-height: 1;
+}
+.login-card h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.9rem; font-weight: 700;
+  color: var(--teal-deep); margin-bottom: 6px;
+  letter-spacing: .02em;
+}
+[data-theme="dark"] .login-card h2 { color: var(--gold-light); }
+.login-card p { color: var(--text-soft); font-size: .88rem; margin-bottom: 28px; }
+.login-input-wrap { position: relative; margin-bottom: 16px; }
+.login-input-wrap i {
+  position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); font-size: .9rem;
+}
+.login-card input {
+  width: 100%; padding: 14px 18px 14px 44px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 50px; font-size: .95rem;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream); color: var(--text-main);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.login-card input:focus {
+  border-color: var(--teal-mid);
+  box-shadow: 0 0 0 3px rgba(44,90,85,.12);
+}
+.login-card .btn-primary {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--teal-mid), var(--teal-deep));
+  color: white; border: none; border-radius: 50px;
+  font-size: 1rem; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; letter-spacing: .04em;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 18px rgba(26,61,58,.3);
+}
+.login-card .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,61,58,.4); }
+.login-card .btn-primary:active { transform: translateY(0); }
+.error-msg { color: var(--danger); font-size: .85rem; margin-top: 12px; min-height: 20px; }
+.login-gold-line {
+  font-size: .75rem; color: var(--gold); letter-spacing: .1em;
+  text-transform: uppercase; margin-top: 24px; opacity: .7;
+}
+
+/* ===================== LAYOUT ===================== */
+#mainApp { display: none; }
+
+.app-layout {
+  display: flex; min-height: 100vh;
+}
+
+/* Sidebar (desktop) */
+.sidebar {
+  width: var(--sidebar-w);
+  background: linear-gradient(180deg, var(--teal-deep) 0%, #0e2828 100%);
+  position: fixed; top: 0; left: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  z-index: 100;
+  box-shadow: 4px 0 24px rgba(0,0,0,.15);
+  transition: transform var(--transition);
+}
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(201,168,76,.2);
+  display: flex; align-items: center; gap: 12px;
+}
+.sidebar-logo-img {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(201,168,76,.15);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+}
+.sidebar-logo-img img { width: 36px; height: 36px; object-fit: contain; }
+.sidebar-logo-img .s-fallback {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 700; color: var(--gold);
+}
+.sidebar-title { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; color: #fff; }
+.sidebar-subtitle { font-size: .7rem; color: rgba(255,255,255,.45); letter-spacing: .06em; text-transform: uppercase; }
+
+.sidebar-nav { flex: 1; padding: 20px 12px; overflow-y: auto; }
+.nav-label {
+  font-size: .65rem; color: rgba(255,255,255,.35);
+  letter-spacing: .12em; text-transform: uppercase;
+  padding: 0 12px; margin: 16px 0 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; color: rgba(255,255,255,.65);
+  font-size: .88rem; font-weight: 500;
+  transition: background var(--transition), color var(--transition);
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item i { width: 18px; font-size: .95rem; text-align: center; flex-shrink: 0; }
+.nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav-item.active {
+  background: rgba(201,168,76,.18);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+.nav-item.active i { color: var(--gold); }
+
+.sidebar-footer {
+  padding: 16px 12px 24px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-footer .nav-item { font-size: .82rem; }
+
+/* Main content */
+.main-content {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  padding: 32px 32px 100px;
+  min-height: 100vh;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 32px;
+}
+.topbar-title h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem; font-weight: 700; color: var(--teal-deep); line-height: 1;
+}
+[data-theme="dark"] .topbar-title h1 { color: var(--gold-light); }
+.topbar-title p { font-size: .82rem; color: var(--text-muted); margin-top: 4px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.btn-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface); border: 1.5px solid var(--cream-dark);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--text-soft); font-size: .9rem;
+  transition: all var(--transition); box-shadow: var(--shadow-sm);
+}
+.btn-icon:hover { background: var(--teal-mid); color: white; border-color: var(--teal-mid); }
+
+/* ===================== PANELS ===================== */
+.panel { display: none; animation: fadeIn .2s ease; }
+.panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===================== KPI CARDS ===================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px; margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--cream-dark);
+  transition: transform var(--transition), box-shadow var(--transition);
+  position: relative; overflow: hidden;
+}
+.kpi-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--teal-mid), var(--gold));
+  opacity: 0; transition: opacity var(--transition);
+}
+.kpi-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.kpi-card:hover::after { opacity: 1; }
+.kpi-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; margin-bottom: 14px;
+}
+.kpi-icon.teal { background: rgba(44,90,85,.1); color: var(--teal-mid); }
+.kpi-icon.gold { background: rgba(201,168,76,.12); color: var(--gold); }
+.kpi-icon.green { background: rgba(30,111,79,.1); color: var(--success); }
+.kpi-icon.danger { background: rgba(192,57,43,.1); color: var(--danger); }
+.kpi-icon.purple { background: rgba(100,60,120,.1); color: #7c4fa0; }
+.kpi-label {
+  font-size: .72rem; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+}
+.kpi-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.85rem; font-weight: 700; color: var(--text-main); line-height: 1;
+}
+.kpi-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(44,90,85,.1); color: var(--teal-mid);
+  border-radius: 50px; padding: 3px 10px;
+  font-size: .72rem; font-weight: 600; margin-top: 8px;
+}
+.kpi-badge.gold { background: rgba(201,168,76,.12); color: var(--gold); }
+
+/* ===================== SECTION HEADER ===================== */
+.section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-hdr h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.45rem; font-weight: 700; color: var(--text-main);
+}
+.section-hdr h2 span { color: var(--gold); }
+
+/* ===================== FORM CARD ===================== */
+.form-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 28px 30px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--cream-dark);
+}
+.form-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem; font-weight: 700;
+  color: var(--teal-deep); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+[data-theme="dark"] .form-title { color: var(--gold-light); }
+.form-title i { color: var(--gold); font-size: 1rem; }
+
+.form-grid-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px; align-items: end;
+}
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+.field-group label {
+  font-size: .72rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.field-group input,
+.field-group select {
+  padding: 11px 15px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: var(--radius-sm);
+  font-size: .88rem; font-family: 'DM Sans', sans-serif;
+  background: var(--cream); color: var(--text-main);
+  width: 100%; outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.field-group input:focus,
+.field-group select:focus {
+  border-color: var(--teal-mid);
+  box-shadow: 0 0 0 3px rgba(44,90,85,.1);
+}
+.field-group select { cursor: pointer; }
+.cost-hint {
+  font-size: .72rem; color: var(--text-muted);
+  margin-top: 14px; display: flex; gap: 8px; align-items: center;
+}
+.cost-hint i { color: var(--gold); }
+
+/* ===================== BUTTONS ===================== */
+.btn {
+  padding: 11px 22px; border-radius: var(--radius-sm);
+  font-size: .88rem; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; border: none;
+  transition: all var(--transition);
+  display: inline-flex; align-items: center; gap: 8px;
+  letter-spacing: .02em;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--teal-mid), var(--teal-deep));
+  color: white; box-shadow: 0 4px 14px rgba(44,90,85,.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(44,90,85,.4); }
+.btn-primary:active { transform: translateY(0); }
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), #b8903a);
+  color: white; box-shadow: 0 4px 14px rgba(201,168,76,.3);
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 7px 20px rgba(201,168,76,.4); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #155c40; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #a93226; }
+.btn-outline {
+  background: transparent; color: var(--text-soft);
+  border: 1.5px solid var(--cream-dark);
+}
+.btn-outline:hover { border-color: var(--teal-mid); color: var(--teal-mid); background: rgba(44,90,85,.05); }
+.btn-sm { padding: 7px 14px; font-size: .8rem; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* ===================== TABLE ===================== */
+.table-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 0; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--cream-dark);
+  margin-bottom: 24px;
+}
+.table-card-header {
+  padding: 18px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--cream-dark);
+}
+.table-card-header h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem; font-weight: 700; color: var(--text-main);
+}
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  padding: 12px 16px;
+  font-size: .7rem; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-muted);
+  background: var(--cream); text-align: left;
+  border-bottom: 1px solid var(--cream-dark);
+}
+td {
+  padding: 13px 16px; font-size: .86rem;
+  border-bottom: 1px solid var(--cream-dark);
+  color: var(--text-main);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--cream); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 50px;
+  font-size: .75rem; font-weight: 600;
+}
+.badge-teal { background: rgba(44,90,85,.1); color: var(--teal-mid); }
+.badge-gold { background: rgba(201,168,76,.12); color: #9a7020; }
+.badge-green { background: rgba(30,111,79,.1); color: var(--success); }
+.badge-red { background: rgba(192,57,43,.1); color: var(--danger); }
+.delete-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: .9rem;
+  padding: 6px 8px; border-radius: 8px;
+  transition: all var(--transition);
+}
+.delete-btn:hover { color: var(--danger); background: rgba(192,57,43,.1); }
+
+/* ===================== CHART CARD ===================== */
+.chart-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--cream-dark);
+  margin-bottom: 24px;
+}
+.chart-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem; font-weight: 700;
+  color: var(--text-main); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chart-card h3 i { color: var(--gold); }
+
+/* ===================== PEDIDOS (BAJO PEDIDO) ===================== */
+.pedidos-list { list-style: none; }
+.pedido-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: var(--radius-sm);
+  background: var(--cream); margin-bottom: 8px;
+  border: 1px solid var(--cream-dark);
+  transition: all var(--transition);
+}
+.pedido-item.surtido {
+  opacity: .5; background: rgba(30,111,79,.05);
+  border-color: rgba(30,111,79,.15);
+}
+.pedido-item-left { display: flex; align-items: center; gap: 12px; }
+.pedido-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(201,168,76,.2);
+}
+.pedido-item.surtido .pedido-dot { background: var(--success); box-shadow: 0 0 0 3px rgba(30,111,79,.2); }
+.pedido-name {
+  font-weight: 500; font-size: .9rem;
+}
+.pedido-item.surtido .pedido-name { text-decoration: line-through; color: var(--text-muted); }
+.pedido-note { font-size: .76rem; color: var(--text-muted); margin-top: 2px; }
+.pedido-actions { display: flex; gap: 6px; align-items: center; }
+.check-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--cream-dark);
+  background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); font-size: .8rem;
+  transition: all var(--transition);
+}
+.check-btn:hover { border-color: var(--success); color: var(--success); background: rgba(30,111,79,.06); }
+.pedido-item.surtido .check-btn { border-color: var(--success); color: var(--success); background: rgba(30,111,79,.1); }
+.empty-state {
+  text-align: center; padding: 48px 24px;
+  color: var(--text-muted);
+}
+.empty-state i { font-size: 2.2rem; margin-bottom: 12px; color: var(--cream-dark); }
+.empty-state p { font-size: .88rem; }
+
+/* ===================== TOP PERFUMES BAR ===================== */
+.top-bar-item {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.top-bar-rank {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700; font-size: 1.1rem; color: var(--text-muted);
+  width: 24px; text-align: center;
+}
+.top-bar-rank.first { color: var(--gold); }
+.top-bar-label { flex: 1; font-size: .86rem; font-weight: 500; }
+.top-bar-track {
+  flex: 2; height: 6px; background: var(--cream-dark);
+  border-radius: 10px; overflow: hidden;
+}
+.top-bar-fill {
+  height: 100%; border-radius: 10px;
+  background: linear-gradient(90deg, var(--teal-mid), var(--gold));
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+}
+.top-bar-count { font-size: .8rem; color: var(--text-muted); width: 48px; text-align: right; }
+
+/* ===================== BOTTOM NAV (mobile) ===================== */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--surface);
+  border-top: 1px solid var(--cream-dark);
+  z-index: 200;
+  align-items: stretch;
+  box-shadow: 0 -4px 20px rgba(26,61,58,.1);
+}
+.bnav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  cursor: pointer; color: var(--text-muted);
+  font-size: .62rem; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase;
+  border: none; background: none;
+  transition: color var(--transition);
+}
+.bnav-item i { font-size: 1.2rem; transition: transform .2s; }
+.bnav-item.active { color: var(--teal-mid); }
+.bnav-item.active i { transform: translateY(-2px); }
+
+/* ===================== TOAST ===================== */
+#toast-container {
+  position: fixed; top: 24px; right: 24px; z-index: 999;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  background: var(--teal-deep); color: white;
+  padding: 14px 20px; border-radius: var(--radius-sm);
+  font-size: .86rem; font-weight: 500;
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; gap: 10px;
+  animation: slideRight .3s ease both;
+  border-left: 4px solid var(--gold);
+  max-width: 320px;
+}
+.toast.success { border-left-color: #2ecc71; }
+.toast.error { border-left-color: var(--danger); }
+@keyframes slideRight { from { opacity:0; transform: translateX(30px); } to { opacity:1; transform: translateX(0); } }
+@keyframes slideUp { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
+
+/* ===================== TABS (for estadísticas) ===================== */
+.stats-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.stat-tab {
+  padding: 8px 18px; border-radius: 50px;
+  font-size: .82rem; font-weight: 600;
+  cursor: pointer; border: 1.5px solid var(--cream-dark);
+  background: transparent; color: var(--text-soft);
+  transition: all var(--transition);
+}
+.stat-tab.active { background: var(--teal-mid); color: white; border-color: var(--teal-mid); }
+
+/* ===================== IMPORT/EXPORT ===================== */
+.io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.io-card {
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 24px; border: 1px solid var(--cream-dark);
+  box-shadow: var(--shadow-sm);
+}
+.io-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 700; color: var(--text-main);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.io-card h3 i { color: var(--gold); }
+.io-card p { font-size: .82rem; color: var(--text-muted); margin-bottom: 16px; }
+.file-input-wrap {
+  border: 2px dashed var(--cream-dark);
+  border-radius: var(--radius-sm);
+  padding: 16px; text-align: center;
+  margin-bottom: 14px; cursor: pointer;
+  transition: border-color var(--transition);
+}
+.file-input-wrap:hover { border-color: var(--teal-mid); }
+.file-input-wrap input { display: none; }
+.file-input-wrap label {
+  cursor: pointer; color: var(--text-soft);
+  font-size: .84rem; display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.file-input-wrap label i { font-size: 1.5rem; color: var(--teal-light); }
+#fileNameDisplay { font-size: .78rem; color: var(--teal-mid); margin-top: 4px; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .main-content { margin-left: 0; padding: 20px 16px 90px; }
+  .bottom-nav { display: flex; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .io-grid { grid-template-columns: 1fr; }
+  .form-grid-fields { grid-template-columns: 1fr 1fr; }
+  .topbar-title h1 { font-size: 1.5rem; }
+}
+@media (max-width: 560px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-value { font-size: 1.4rem; }
+  .form-grid-fields { grid-template-columns: 1fr; }
+  #toast-container { top: auto; bottom: 80px; left: 16px; right: 16px; }
+  .toast { max-width: 100%; }
+}
+
+/* DARK overrides */
+[data-theme="dark"] .field-group input,
+[data-theme="dark"] .field-group select {
+  background: var(--surface2); border-color: rgba(255,255,255,.1);
+}
+[data-theme="dark"] th { background: var(--surface2); }
+[data-theme="dark"] tr:hover td { background: var(--surface2); }
+[data-theme="dark"] .pedido-item { background: var(--surface2); border-color: rgba(255,255,255,.07); }
+[data-theme="dark"] .kpi-card { border-color: rgba(255,255,255,.06); }
+[data-theme="dark"] .form-card,
+[data-theme="dark"] .table-card,
+[data-theme="dark"] .chart-card,
+[data-theme="dark"] .io-card { border-color: rgba(255,255,255,.06); }
+[data-theme="dark"] .btn-outline { border-color: rgba(255,255,255,.12); }
+[data-theme="dark"] .stats-tabs .stat-tab { border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .file-input-wrap { border-color: rgba(255,255,255,.1); }
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <img src="sandyslogo.png" alt="Sandys" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+      <span class="logo-fallback" style="display:none">S</span>
+    </div>
+    <h2>Sandys Finanzas</h2>
+    <p>Ingresa tu contraseña para continuar</p>
+    <div class="login-input-wrap">
+      <i class="fas fa-lock"></i>
+      <input type="password" id="passwordInput" placeholder="Contraseña de acceso" autocomplete="off">
+    </div>
+    <button class="btn-primary" id="loginBtn">
+      <i class="fas fa-arrow-right-to-bracket"></i> Ingresar
+    </button>
+    <div id="loginError" class="error-msg"></div>
+    <div class="login-gold-line">✦ Boutique de Perfumería ✦</div>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="mainApp">
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-img">
+          <img src="sandyslogo.png" alt="S" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+          <span class="s-fallback" style="display:none">S</span>
+        </div>
+        <div>
+          <div class="sidebar-title">Sandys</div>
+          <div class="sidebar-subtitle">Perfumería</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-label">Principal</div>
+        <button class="nav-item active" data-panel="dashboard">
+          <i class="fas fa-gauge-high"></i> Dashboard
+        </button>
+        <button class="nav-item" data-panel="ventas">
+          <i class="fas fa-cart-plus"></i> Registrar Venta
+        </button>
+        <button class="nav-item" data-panel="gastos">
+          <i class="fas fa-file-invoice-dollar"></i> Registrar Gasto
+        </button>
+
+        <div class="nav-label">Gestión</div>
+        <button class="nav-item" data-panel="pedidos">
+          <i class="fas fa-clipboard-list"></i> Bajo Pedido
+        </button>
+        <button class="nav-item" data-panel="estadisticas">
+          <i class="fas fa-chart-bar"></i> Estadísticas
+        </button>
+        <button class="nav-item" data-panel="registros">
+          <i class="fas fa-table"></i> Ver Registros
+        </button>
+
+        <div class="nav-label">Datos</div>
+        <button class="nav-item" data-panel="importar">
+          <i class="fas fa-folder-open"></i> Importar / Exportar
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item" id="themeToggle">
+          <i class="fas fa-moon"></i> Modo oscuro
+        </button>
+        <button class="nav-item" id="logoutBtn">
+          <i class="fas fa-right-from-bracket"></i> Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-title">
+          <h1 id="panelTitle">Dashboard</h1>
+          <p id="panelDate"></p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-icon" id="themeToggleMob" title="Cambiar tema">
+            <i class="fas fa-moon"></i>
+          </button>
+          <button class="btn-icon" onclick="exportarExcel()" title="Exportar Excel">
+            <i class="fas fa-file-excel"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== PANEL: Dashboard ===== -->
+      <section class="panel active" id="panel-dashboard">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon teal"><i class="fas fa-coins"></i></div>
+            <div class="kpi-label">Ingresos totales</div>
+            <div class="kpi-value" id="kpiIngresos">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon danger"><i class="fas fa-receipt"></i></div>
+            <div class="kpi-label">Gastos totales</div>
+            <div class="kpi-value" id="kpiGastos">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon green"><i class="fas fa-chart-simple"></i></div>
+            <div class="kpi-label">Utilidad neta</div>
+            <div class="kpi-value" id="kpiUtilidad">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon gold"><i class="fas fa-piggy-bank"></i></div>
+            <div class="kpi-label">Colchón actual</div>
+            <div class="kpi-value" id="kpiColchon">$0</div>
+            <span class="kpi-badge gold"><i class="fas fa-seedling"></i> Inv. inicial $1,000</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon teal"><i class="fas fa-sun"></i></div>
+            <div class="kpi-label">Ventas hoy</div>
+            <div class="kpi-value" id="kpiHoy">$0</div>
+            <span class="kpi-badge" id="kpiHoyCant"></span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon gold"><i class="fas fa-trophy"></i></div>
+            <div class="kpi-label">Perfume estrella</div>
+            <div class="kpi-value" id="kpiEstrella" style="font-size:1.1rem">—</div>
+            <div id="kpiEstrellaUnits" style="font-size:.76rem; color:var(--text-muted); margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <!-- Mini gráfico del día -->
+        <div class="chart-card">
+          <h3><i class="fas fa-chart-line"></i> Tendencia — últimos 7 días</h3>
+          <canvas id="tendenciaChart" height="180"></canvas>
+        </div>
+
+        <!-- Top 5 perfumes -->
+        <div class="chart-card">
+          <h3><i class="fas fa-ranking-star"></i> Top perfumes (por unidades)</h3>
+          <div id="topPerfumesBars"></div>
+        </div>
+      </section>
+
+      <!-- ===== PANEL: Registrar Venta ===== -->
+      <section class="panel" id="panel-ventas">
+        <div class="form-card">
+          <div class="form-title"><i class="fas fa-star"></i> Nueva Venta</div>
+          <div class="form-grid-fields">
+            <div class="field-group">
+              <label>Nombre del perfume</label>
+              <input type="text" id="nombrePerfume" placeholder="Ej: AQUA DI GIO" style="text-transform:uppercase">
+            </div>
+            <div class="field-group">
+              <label>Tamaño</label>
+              <select id="productoVenta">
+                <option value="30">30 ml — $130</option>
+                <option value="50">50 ml — $175</option>
+                <option value="100">100 ml — $330</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Cantidad</label>
+              <input type="number" id="cantidadVenta" value="1" min="1">
+            </div>
+            <div class="field-group">
+              <label>Tipo de pago</label>
+              <select id="pagoVenta">
+                <option value="Transferencia">Transferencia</option>
+                <option value="Efectivo">Efectivo</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Fecha</label>
+              <input type="date" id="fechaVenta">
+            </div>
+            <div class="field-group">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary btn-full" id="btnRegistrarVenta">
+                <i class="fas fa-check"></i> Registrar venta
+              </button>
+            </div>
+          </div>
+          <div class="cost-hint">
+            <i class="fas fa-cube"></i>
+            Costos: 30ml $74.70 · 50ml $88.70 · 100ml $150.70
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PANEL: Registrar Gasto ===== -->
+      <section class="panel" id="panel-gastos">
+        <div class="form-card">
+          <div class="form-title"><i class="fas fa-file-invoice-dollar"></i> Nuevo Gasto</div>
+          <div class="form-grid-fields">
+            <div class="field-group" style="grid-column: span 2;">
+              <label>Concepto</label>
+              <input type="text" id="conceptoGasto" placeholder="Ej: Envases, publicidad, fletes…">
+            </div>
+            <div class="field-group">
+              <label>Monto ($)</label>
+              <input type="number" id="montoGasto" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="field-group">
+              <label>Fecha</label>
+              <input type="date" id="fechaGasto">
+            </div>
+            <div class="field-group">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary btn-full" id="btnRegistrarGasto">
+                <i class="fas fa-check"></i> Registrar gasto
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PANEL: Bajo Pedido ===== -->
+      <section class="panel" id="panel-pedidos">
+        <div class="form-card">
+          <div class="form-title"><i class="fas fa-plus-circle"></i> Agregar esencia a surtir</div>
+          <div class="form-grid-fields">
+            <div class="field-group" style="grid-column: span 2;">
+              <label>Nombre de la esencia</label>
+              <input type="text" id="pedidoNombre" placeholder="Ej: BACCARAT ROUGE 540" style="text-transform:uppercase">
+            </div>
+            <div class="field-group">
+              <label>Nota (opcional)</label>
+              <input type="text" id="pedidoNota" placeholder="Ej: 2 frascos urgente">
+            </div>
+            <div class="field-group">
+              <label>&nbsp;</label>
+              <button class="btn btn-gold btn-full" id="btnAgregarPedido">
+                <i class="fas fa-plus"></i> Agregar a la lista
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-hdr">
+          <h2>Lista de <span>surtido</span></h2>
+          <button class="btn btn-outline btn-sm" id="btnLimpiarSurtidos">
+            <i class="fas fa-broom"></i> Limpiar surtidos
+          </button>
+        </div>
+
+        <ul class="pedidos-list" id="pedidosList">
+          <li class="empty-state">
+            <i class="fas fa-clipboard-list"></i>
+            <p>Sin esencias por surtir. ¡Todo en orden!</p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== PANEL: Estadísticas ===== -->
+      <section class="panel" id="panel-estadisticas">
+        <div class="stats-tabs">
+          <button class="stat-tab active" data-stab="ventas7">7 días</button>
+          <button class="stat-tab" data-stab="ventas30">30 días</button>
+          <button class="stat-tab" data-stab="perfumes">Perfumes</button>
+        </div>
+
+        <div id="stab-ventas7" class="stab active">
+          <div class="chart-card">
+            <h3><i class="fas fa-chart-area"></i> Ingresos vs Gastos — últimos 7 días</h3>
+            <canvas id="chartVentas7" height="220"></canvas>
+          </div>
+        </div>
+        <div id="stab-ventas30" class="stab" style="display:none">
+          <div class="chart-card">
+            <h3><i class="fas fa-calendar-days"></i> Ingresos mensuales — últimos 30 días</h3>
+            <canvas id="chartVentas30" height="220"></canvas>
+          </div>
+        </div>
+        <div id="stab-perfumes" class="stab" style="display:none">
+          <div class="chart-card">
+            <h3><i class="fas fa-chart-bar"></i> Top perfumes por unidades vendidas</h3>
+            <canvas id="chartPerfumes" height="280"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PANEL: Registros ===== -->
+      <section class="panel" id="panel-registros">
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3><i class="fas fa-receipt" style="color:var(--gold)"></i> &nbsp;Ventas</h3>
+            <button class="btn btn-success btn-sm" onclick="exportarExcel()">
+              <i class="fas fa-file-excel"></i> Excel
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table id="tablaVentas">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Perfume</th><th>Tamaño</th>
+                  <th>Cant.</th><th>Total</th><th>Pago</th><th>Utilidad</th><th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card-header">
+            <h3><i class="fas fa-file-invoice" style="color:var(--gold)"></i> &nbsp;Gastos</h3>
+            <button class="btn btn-danger btn-sm" id="btnLimpiarTodo">
+              <i class="fas fa-trash-alt"></i> Reiniciar todo
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table id="tablaGastos">
+              <thead>
+                <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th></th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PANEL: Importar / Exportar ===== -->
+      <section class="panel" id="panel-importar">
+        <div class="io-grid">
+          <div class="io-card">
+            <h3><i class="fas fa-upload"></i> Importar Excel</h3>
+            <p>Sube un archivo .xlsx previamente exportado para restaurar datos.</p>
+            <div class="file-input-wrap">
+              <input type="file" id="fileExcelInput" accept=".xlsx,.xls">
+              <label for="fileExcelInput">
+                <i class="fas fa-cloud-arrow-up"></i>
+                Seleccionar archivo .xlsx
+                <div id="fileNameDisplay">Ningún archivo seleccionado</div>
+              </label>
+            </div>
+            <button class="btn btn-primary btn-full" id="btnImportarExcel">
+              <i class="fas fa-database"></i> Cargar y reemplazar datos
+            </button>
+          </div>
+
+          <div class="io-card">
+            <h3><i class="fas fa-download"></i> Exportar y Plantilla</h3>
+            <p>Descarga todos tus registros actuales en formato Excel.</p>
+            <button class="btn btn-success btn-full" style="margin-bottom:12px" onclick="exportarExcel()">
+              <i class="fas fa-file-excel"></i> Exportar datos actuales
+            </button>
+            <p style="margin-bottom:10px">¿Primera vez? Descarga la plantilla ejemplo.</p>
+            <button class="btn btn-outline btn-full" id="btnDescargarEjemplo">
+              <i class="fas fa-file-arrow-down"></i> Descargar plantilla
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Bottom Nav (mobile) -->
+  <nav class="bottom-nav">
+    <button class="bnav-item active" data-panel="dashboard"><i class="fas fa-gauge-high"></i>Inicio</button>
+    <button class="bnav-item" data-panel="ventas"><i class="fas fa-cart-plus"></i>Venta</button>
+    <button class="bnav-item" data-panel="pedidos"><i class="fas fa-clipboard-list"></i>Pedidos</button>
+    <button class="bnav-item" data-panel="estadisticas"><i class="fas fa-chart-bar"></i>Stats</button>
+    <button class="bnav-item" data-panel="registros"><i class="fas fa-table"></i>Tabla</button>
+  </nav>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+// ==================== FIREBASE ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyAgZLbcldCRdb5WlH_8u4N0A0B1s7LQYts",
+  authDomain: "sandys-finanzas.firebaseapp.com",
+  projectId: "sandys-finanzas",
+  storageBucket: "sandys-finanzas.firebasestorage.app",
+  messagingSenderId: "1095466359996",
+  appId: "1:1095466359996:web:e64fb821ea47d3e14b04b9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ==================== GLOBALS ====================
+const productos = {
+  30:  { nombre: "30ml",  precioVenta: 130,  costoProd: 74.70  },
+  50:  { nombre: "50ml",  precioVenta: 175,  costoProd: 88.70  },
+  100: { nombre: "100ml", precioVenta: 330,  costoProd: 150.70 }
+};
+const INVERSION_INICIAL = 1000;
+let ventas  = [];
+let gastos  = [];
+let pedidos = JSON.parse(localStorage.getItem("sandys_pedidos") || "[]");
+let chartTendencia = null, chart7 = null, chart30 = null, chartPerf = null;
+let unsubVentas = null, unsubGastos = null;
+
+// ==================== TOAST ====================
+function toast(msg, type = "success") {
+  const c = document.getElementById("toast-container");
+  const t = document.createElement("div");
+  t.className = `toast ${type}`;
+  const ico = type === "success" ? "fa-circle-check" : type === "error" ? "fa-circle-xmark" : "fa-circle-info";
+  t.innerHTML = `<i class="fas ${ico}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transform = "translateX(30px)"; t.style.transition = ".3s"; setTimeout(() => t.remove(), 320); }, 3500);
+}
+
+// ==================== NAVIGATION ====================
+const panelTitles = {
+  dashboard: "Dashboard", ventas: "Registrar Venta",
+  gastos: "Registrar Gasto", pedidos: "Bajo Pedido",
+  estadisticas: "Estadísticas", registros: "Ver Registros", importar: "Importar / Exportar"
+};
+
+function navigateTo(panelId) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  const target = document.getElementById("panel-" + panelId);
+  if (target) target.classList.add("active");
+
+  document.querySelectorAll(".nav-item[data-panel]").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-panel") === panelId);
+  });
+  document.querySelectorAll(".bnav-item[data-panel]").forEach(b => {
+    b.classList.toggle("active", b.getAttribute("data-panel") === panelId);
+  });
+  document.getElementById("panelTitle").textContent = panelTitles[panelId] || "";
+
+  if (panelId === "dashboard" || panelId === "estadisticas") {
+    setTimeout(() => { actualizarGraficos(); }, 50);
+  }
+  if (panelId === "pedidos") renderPedidos();
+}
+
+// ==================== METRICAS ====================
+function calcularMetricas() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const ingresosTotales = ventas.reduce((s, v) => s + v.totalVenta, 0);
+  const gastosTotales   = gastos.reduce((s, g) => s + g.monto, 0);
+  const costoVentas     = ventas.reduce((s, v) => s + (v.cantidad * (productos[v.productoML]?.costoProd || 0)), 0);
+  const utilidadNeta    = ingresosTotales - costoVentas - gastosTotales;
+  const colchonActual   = INVERSION_INICIAL + utilidadNeta;
+  const ventasHoy       = ventas.filter(v => v.fecha === hoy);
+  const totalHoy        = ventasHoy.reduce((s, v) => s + v.totalVenta, 0);
+  const cantHoy         = ventasHoy.reduce((s, v) => s + v.cantidad, 0);
+
+  // Perfume estrella
+  const mapa = new Map();
+  ventas.forEach(v => {
+    const n = v.perfumeName || "SIN NOMBRE";
+    mapa.set(n, (mapa.get(n) || 0) + v.cantidad);
+  });
+  let estrella = "Sin ventas", maxU = 0;
+  for (const [n, u] of mapa.entries()) { if (u > maxU) { maxU = u; estrella = n; } }
+
+  return { ingresosTotales, gastosTotales, utilidadNeta, colchonActual, totalHoy, cantHoy, estrella, maxU, mapa };
+}
+
+function actualizarDashboards() {
+  const m = calcularMetricas();
+  document.getElementById("kpiIngresos").textContent = "$" + m.ingresosTotales.toFixed(2);
+  document.getElementById("kpiGastos").textContent   = "$" + m.gastosTotales.toFixed(2);
+  document.getElementById("kpiUtilidad").textContent = "$" + m.utilidadNeta.toFixed(2);
+  document.getElementById("kpiColchon").textContent  = "$" + m.colchonActual.toFixed(2);
+  document.getElementById("kpiHoy").textContent      = "$" + m.totalHoy.toFixed(2);
+  document.getElementById("kpiHoyCant").textContent  = m.cantHoy > 0 ? `${m.cantHoy} uds hoy` : "";
+  document.getElementById("kpiEstrella").textContent = m.estrella;
+  document.getElementById("kpiEstrellaUnits").textContent = m.maxU > 0 ? `${m.maxU} unidades vendidas` : "";
+
+  // Top 5 bar list
+  const sorted = [...m.mapa.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const max = sorted[0]?.[1] || 1;
+  const container = document.getElementById("topPerfumesBars");
+  if (!sorted.length) { container.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">Sin ventas aún.</p>'; return; }
+  container.innerHTML = sorted.map(([name, cnt], i) => `
+    <div class="top-bar-item">
+      <div class="top-bar-rank ${i === 0 ? 'first' : ''}">${i+1}</div>
+      <div class="top-bar-label">${name}</div>
+      <div class="top-bar-track"><div class="top-bar-fill" style="width:${(cnt/max*100).toFixed(0)}%"></div></div>
+      <div class="top-bar-count">${cnt} uds</div>
+    </div>
+  `).join("");
+}
+
+// ==================== GRAFICOS ====================
+function getDiaLabels(n) {
+  const labels = [], dates = [];
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+    labels.push(d.toLocaleDateString("es-MX", { month:"short", day:"numeric" }));
+  }
+  return { labels, dates };
+}
+
+function actualizarGraficos() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const gridColor = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
+  const tickColor = isDark ? "#98b5b2" : "#8fa8a5";
+
+  // Tendencia 7 días (dashboard)
+  {
+    const { labels, dates } = getDiaLabels(7);
+    const ingD = new Array(7).fill(0), gasD = new Array(7).fill(0);
+    ventas.forEach(v => { const i = dates.indexOf(v.fecha); if (i !== -1) ingD[i] += v.totalVenta; });
+    gastos.forEach(g => { const i = dates.indexOf(g.fecha); if (i !== -1) gasD[i] += g.monto; });
+    const ctx = document.getElementById("tendenciaChart").getContext("2d");
+    if (chartTendencia) chartTendencia.destroy();
+    chartTendencia = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          { label:"Ingresos", data:ingD, borderColor:"#2c5a55", backgroundColor:"rgba(44,90,85,.08)", tension:.35, fill:true, pointBackgroundColor:"#2c5a55" },
+          { label:"Gastos",   data:gasD, borderColor:"#c9a84c", backgroundColor:"rgba(201,168,76,.08)", tension:.35, fill:true, pointBackgroundColor:"#c9a84c" }
+        ]
+      },
+      options: { responsive:true, plugins:{ legend:{ labels:{ color:tickColor } } }, scales:{ x:{ ticks:{color:tickColor}, grid:{color:gridColor} }, y:{ ticks:{color:tickColor}, grid:{color:gridColor} } } }
+    });
+  }
+
+  // Stats — 7 días
+  {
+    const { labels, dates } = getDiaLabels(7);
+    const ingD = new Array(7).fill(0), gasD = new Array(7).fill(0);
+    ventas.forEach(v => { const i = dates.indexOf(v.fecha); if (i !== -1) ingD[i] += v.totalVenta; });
+    gastos.forEach(g => { const i = dates.indexOf(g.fecha); if (i !== -1) gasD[i] += g.monto; });
+    const ctx2 = document.getElementById("chartVentas7").getContext("2d");
+    if (chart7) chart7.destroy();
+    chart7 = new Chart(ctx2, {
+      type:"bar",
+      data: { labels, datasets:[
+        { label:"Ingresos", data:ingD, backgroundColor:"rgba(44,90,85,.75)", borderRadius:6 },
+        { label:"Gastos",   data:gasD, backgroundColor:"rgba(201,168,76,.65)", borderRadius:6 }
+      ]},
+      options:{ responsive:true, plugins:{ legend:{ labels:{color:tickColor} } }, scales:{ x:{ticks:{color:tickColor},grid:{color:gridColor}}, y:{ticks:{color:tickColor},grid:{color:gridColor}} } }
+    });
+  }
+
+  // Stats — 30 días
+  {
+    const { labels, dates } = getDiaLabels(30);
+    const ingD = new Array(30).fill(0);
+    ventas.forEach(v => { const i = dates.indexOf(v.fecha); if (i !== -1) ingD[i] += v.totalVenta; });
+    const ctx3 = document.getElementById("chartVentas30").getContext("2d");
+    if (chart30) chart30.destroy();
+    chart30 = new Chart(ctx3, {
+      type:"line",
+      data:{ labels, datasets:[{ label:"Ingresos", data:ingD, borderColor:"#2c5a55", backgroundColor:"rgba(44,90,85,.12)", tension:.3, fill:true }]},
+      options:{ responsive:true, plugins:{ legend:{ labels:{color:tickColor} } }, scales:{ x:{ticks:{color:tickColor, maxTicksLimit:10},grid:{color:gridColor}}, y:{ticks:{color:tickColor},grid:{color:gridColor}} } }
+    });
+  }
+
+  // Stats — Perfumes
+  {
+    const mapa = new Map();
+    ventas.forEach(v => { const n = v.perfumeName || "SIN NOMBRE"; mapa.set(n, (mapa.get(n)||0)+v.cantidad); });
+    const sorted = [...mapa.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const ctx4 = document.getElementById("chartPerfumes").getContext("2d");
+    if (chartPerf) chartPerf.destroy();
+    chartPerf = new Chart(ctx4, {
+      type:"bar",
+      data:{ labels:sorted.map(([n])=>n), datasets:[{ label:"Unidades", data:sorted.map(([,u])=>u), backgroundColor:"rgba(44,90,85,.75)", borderRadius:6 }]},
+      options:{ indexAxis:"y", responsive:true, plugins:{ legend:{ labels:{color:tickColor} } }, scales:{ x:{ticks:{color:tickColor},grid:{color:gridColor}}, y:{ticks:{color:tickColor},grid:{color:gridColor}} } }
+    });
+  }
+}
+
+// ==================== TABLAS ====================
+function renderTablas() {
+  const tbV = document.querySelector("#tablaVentas tbody");
+  tbV.innerHTML = "";
+  ventas.slice().reverse().forEach(v => {
+    const tr = tbV.insertRow();
+    tr.innerHTML = `
+      <td>${v.fecha}</td>
+      <td><strong>${v.perfumeName || "—"}</strong></td>
+      <td><span class="badge badge-teal">${productos[v.productoML]?.nombre || v.productoML+"ml"}</span></td>
+      <td>${v.cantidad}</td>
+      <td>$${v.totalVenta?.toFixed(2)}</td>
+      <td><span class="badge ${v.tipoPago==="Efectivo"?"badge-gold":"badge-green"}">${v.tipoPago}</span></td>
+      <td>$${v.utilidadBruta?.toFixed(2)}</td>
+      <td><button class="delete-btn" data-venta-id="${v.id}"><i class="fas fa-trash-alt"></i></button></td>
+    `;
+  });
+  const tbG = document.querySelector("#tablaGastos tbody");
+  tbG.innerHTML = "";
+  gastos.slice().reverse().forEach(g => {
+    const tr = tbG.insertRow();
+    tr.innerHTML = `
+      <td>${g.fecha}</td>
+      <td>${g.concepto}</td>
+      <td>$${g.monto?.toFixed(2)}</td>
+      <td><button class="delete-btn" data-gasto-id="${g.id}"><i class="fas fa-trash-alt"></i></button></td>
+    `;
+  });
+  document.querySelectorAll("[data-venta-id]").forEach(el => el.addEventListener("click", async e => {
+    if (confirm("¿Eliminar esta venta?")) await db.collection("ventas").doc(e.currentTarget.getAttribute("data-venta-id")).delete();
+  }));
+  document.querySelectorAll("[data-gasto-id]").forEach(el => el.addEventListener("click", async e => {
+    if (confirm("¿Eliminar este gasto?")) await db.collection("gastos").doc(e.currentTarget.getAttribute("data-gasto-id")).delete();
+  }));
+}
+
+// ==================== PEDIDOS (BAJO PEDIDO) ====================
+function savePedidos() { localStorage.setItem("sandys_pedidos", JSON.stringify(pedidos)); }
+
+function renderPedidos() {
+  const ul = document.getElementById("pedidosList");
+  if (!pedidos.length) {
+    ul.innerHTML = `<li class="empty-state"><i class="fas fa-clipboard-list"></i><p>Sin esencias por surtir. ¡Todo en orden!</p></li>`;
+    return;
+  }
+  ul.innerHTML = pedidos.map((p, i) => `
+    <li class="pedido-item ${p.surtido ? 'surtido' : ''}" data-idx="${i}">
+      <div class="pedido-item-left">
+        <div class="pedido-dot"></div>
+        <div>
+          <div class="pedido-name">${p.nombre}</div>
+          ${p.nota ? `<div class="pedido-note">${p.nota}</div>` : ""}
+        </div>
+      </div>
+      <div class="pedido-actions">
+        <button class="check-btn" title="${p.surtido ? 'Marcar pendiente':'Marcar surtido'}" onclick="togglePedido(${i})">
+          <i class="fas ${p.surtido ? 'fa-check' : 'fa-circle-check'}"></i>
+        </button>
+        <button class="delete-btn" onclick="deletePedido(${i})"><i class="fas fa-trash-alt"></i></button>
+      </div>
+    </li>
+  `).join("");
+}
+
+function togglePedido(i) { pedidos[i].surtido = !pedidos[i].surtido; savePedidos(); renderPedidos(); }
+function deletePedido(i) { pedidos.splice(i, 1); savePedidos(); renderPedidos(); }
+
+document.getElementById("btnAgregarPedido").addEventListener("click", () => {
+  const nombre = document.getElementById("pedidoNombre").value.trim().toUpperCase();
+  const nota   = document.getElementById("pedidoNota").value.trim();
+  if (!nombre) { toast("Escribe el nombre de la esencia", "error"); return; }
+  pedidos.push({ nombre, nota, surtido: false });
+  savePedidos();
+  renderPedidos();
+  document.getElementById("pedidoNombre").value = "";
+  document.getElementById("pedidoNota").value   = "";
+  toast("Esencia agregada a la lista");
+});
+
+document.getElementById("btnLimpiarSurtidos").addEventListener("click", () => {
+  pedidos = pedidos.filter(p => !p.surtido);
+  savePedidos(); renderPedidos();
+  toast("Lista limpiada");
+});
+
+// ==================== REGISTRAR VENTA ====================
+document.getElementById("btnRegistrarVenta").addEventListener("click", async () => {
+  const btn = document.getElementById("btnRegistrarVenta");
+  const perfumeName = document.getElementById("nombrePerfume").value.trim().toUpperCase();
+  if (!perfumeName) { toast("Escribe el nombre del perfume", "error"); return; }
+  const productoML = parseInt(document.getElementById("productoVenta").value);
+  const cantidad   = parseInt(document.getElementById("cantidadVenta").value);
+  const tipoPago   = document.getElementById("pagoVenta").value;
+  let   fecha      = document.getElementById("fechaVenta").value || new Date().toISOString().slice(0,10);
+  if (isNaN(cantidad) || cantidad < 1) { toast("Cantidad inválida", "error"); return; }
+  const { precioVenta, costoProd } = productos[productoML];
+  const totalVenta    = precioVenta * cantidad;
+  const utilidadBruta = (precioVenta - costoProd) * cantidad;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
+  btn.disabled  = true;
+  try {
+    await db.collection("ventas").add({ fecha, perfumeName, productoML, cantidad, totalVenta, tipoPago, utilidadBruta, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById("nombrePerfume").value   = "";
+    document.getElementById("cantidadVenta").value   = "1";
+    toast(`✓ Venta de ${perfumeName} registrada ($${totalVenta})`);
+  } catch(e) { toast("Error al guardar. Revisa tu conexión.", "error"); console.error(e); }
+  btn.innerHTML = '<i class="fas fa-check"></i> Registrar venta';
+  btn.disabled  = false;
+});
+
+// ==================== REGISTRAR GASTO ====================
+document.getElementById("btnRegistrarGasto").addEventListener("click", async () => {
+  const btn     = document.getElementById("btnRegistrarGasto");
+  const concepto = document.getElementById("conceptoGasto").value.trim();
+  const monto    = parseFloat(document.getElementById("montoGasto").value);
+  let   fecha    = document.getElementById("fechaGasto").value || new Date().toISOString().slice(0,10);
+  if (!concepto) { toast("Escribe el concepto", "error"); return; }
+  if (isNaN(monto) || monto <= 0) { toast("Ingresa un monto válido", "error"); return; }
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando…';
+  btn.disabled  = true;
+  try {
+    await db.collection("gastos").add({ fecha, concepto, monto, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById("conceptoGasto").value = "";
+    document.getElementById("montoGasto").value    = "";
+    toast(`✓ Gasto "${concepto}" registrado ($${monto})`);
+  } catch(e) { toast("Error al guardar el gasto.", "error"); console.error(e); }
+  btn.innerHTML = '<i class="fas fa-check"></i> Registrar gasto';
+  btn.disabled  = false;
+});
+
+// ==================== EXPORTAR EXCEL ====================
+function exportarExcel() {
+  const ventasSheet = ventas.map(v => ({
+    Fecha: v.fecha, "Nombre Perfume": v.perfumeName,
+    Producto: productos[v.productoML]?.nombre,
+    Cantidad: v.cantidad, "Total Venta": v.totalVenta,
+    "Tipo Pago": v.tipoPago, "Utilidad Bruta": v.utilidadBruta
+  }));
+  const gastosSheet = gastos.map(g => ({ Fecha: g.fecha, Concepto: g.concepto, Monto: g.monto }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ventasSheet), "Ventas");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gastosSheet), "Gastos");
+  XLSX.writeFile(wb, `Sandys_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast("Excel exportado correctamente");
+}
+
+// ==================== IMPORTAR EXCEL ====================
+document.getElementById("fileExcelInput").addEventListener("change", e => {
+  const n = e.target.files[0]?.name || "Ningún archivo";
+  document.getElementById("fileNameDisplay").textContent = n;
+});
+
+document.getElementById("btnImportarExcel").addEventListener("click", () => {
+  const fi = document.getElementById("fileExcelInput");
+  if (!fi.files.length) { toast("Selecciona un archivo Excel primero", "error"); return; }
+  importarExcel(fi.files[0]);
+});
+
+async function importarExcel(file) {
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type:"array" });
+    const sv = wb.Sheets["Ventas"], sg = wb.Sheets["Gastos"];
+    const nv = [], ng = [];
+    if (sv) { XLSX.utils.sheet_to_json(sv).forEach(r => {
+      const ml = r.Producto?.includes("30")?30:r.Producto?.includes("50")?50:r.Producto?.includes("100")?100:null;
+      if (ml && r.Cantidad && r["Total Venta"] && r.Fecha)
+        nv.push({ fecha:r.Fecha, perfumeName:(r["Nombre Perfume"]||"").toUpperCase(), productoML:ml, cantidad:r.Cantidad, totalVenta:r["Total Venta"], tipoPago:r["Tipo Pago"]||"Efectivo", utilidadBruta:(productos[ml].precioVenta-productos[ml].costoProd)*r.Cantidad, timestamp:firebase.firestore.FieldValue.serverTimestamp() });
+    }); }
+    if (sg) { XLSX.utils.sheet_to_json(sg).forEach(r => {
+      if (r.Fecha && r.Concepto && r.Monto) ng.push({ fecha:r.Fecha, concepto:r.Concepto, monto:r.Monto, timestamp:firebase.firestore.FieldValue.serverTimestamp() });
+    }); }
+    if (!nv.length && !ng.length) { toast("No se encontraron datos válidos en el Excel.", "error"); return; }
+    if (!confirm(`¿Reemplazar todos los datos actuales con los del Excel?\n(${nv.length} ventas, ${ng.length} gastos)`)) return;
+    try {
+      const bV = db.batch(); (await db.collection("ventas").get()).forEach(d => bV.delete(d.ref)); await bV.commit();
+      const bG = db.batch(); (await db.collection("gastos").get()).forEach(d => bG.delete(d.ref)); await bG.commit();
+      for (const v of nv) await db.collection("ventas").add(v);
+      for (const g of ng) await db.collection("gastos").add(g);
+      toast("Importación completada exitosamente");
+    } catch(ex) { toast("Error durante la importación", "error"); console.error(ex); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById("btnDescargarEjemplo").addEventListener("click", () => {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Fecha:"2025-01-15","Nombre Perfume":"AQUA DI GIO",Producto:"30ml",Cantidad:2,"Total Venta":260,"Tipo Pago":"Efectivo","Utilidad Bruta":110.6 }]), "Ventas");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Fecha:"2025-01-16",Concepto:"Compra frascos",Monto:45 }]), "Gastos");
+  XLSX.writeFile(wb, "sandys_plantilla.xlsx");
+  toast("Plantilla descargada");
+});
+
+// ==================== RESET ====================
+document.getElementById("btnLimpiarTodo").addEventListener("click", async () => {
+  if (!confirm("⚠️ Esto eliminará TODAS las ventas y gastos. ¿Continuar?")) return;
+  const bV = db.batch(); (await db.collection("ventas").get()).forEach(d => bV.delete(d.ref)); await bV.commit();
+  const bG = db.batch(); (await db.collection("gastos").get()).forEach(d => bG.delete(d.ref)); await bG.commit();
+  toast("Todos los datos eliminados");
+});
+
+// ==================== TEMA ====================
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  const icon = dark ? "fa-sun" : "fa-moon";
+  const label = dark ? "Modo claro" : "Modo oscuro";
+  document.querySelectorAll("#themeToggle, #themeToggleMob").forEach(b => {
+    b.innerHTML = `<i class="fas ${icon}"></i> ${b.id === "themeToggle" ? label : ""}`;
+  });
+  localStorage.setItem("sandys_theme", dark ? "dark" : "light");
+  setTimeout(actualizarGraficos, 50);
+}
+document.getElementById("themeToggle").addEventListener("click",    () => applyTheme(document.documentElement.getAttribute("data-theme") !== "dark"));
+document.getElementById("themeToggleMob").addEventListener("click", () => applyTheme(document.documentElement.getAttribute("data-theme") !== "dark"));
+
+// ==================== STATS TABS ====================
+document.querySelectorAll(".stat-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".stat-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".stab").forEach(s => s.style.display = "none");
+    document.getElementById("stab-" + btn.getAttribute("data-stab")).style.display = "block";
+    setTimeout(actualizarGraficos, 50);
+  });
+});
+
+// ==================== FIRESTORE SUBSCRIPTIONS ====================
+function iniciarSuscripciones() {
+  if (unsubVentas) unsubVentas();
+  if (unsubGastos) unsubGastos();
+  unsubVentas = db.collection("ventas").orderBy("fecha","desc").onSnapshot(snap => {
+    ventas = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    actualizarDashboards(); renderTablas(); actualizarGraficos();
+  }, err => console.error(err));
+  unsubGastos = db.collection("gastos").orderBy("fecha","desc").onSnapshot(snap => {
+    gastos = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    actualizarDashboards(); renderTablas(); actualizarGraficos();
+  }, err => console.error(err));
+}
+
+// ==================== LOGIN ====================
+function tryLogin() {
+  const val = document.getElementById("passwordInput").value;
+  const err = document.getElementById("loginError");
+  if (val === "Rocko2003") {
+    sessionStorage.setItem("sandys_auth","true");
+    document.getElementById("loginScreen").style.opacity = "0";
+    setTimeout(() => {
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("mainApp").style.display     = "block";
+      bootApp();
+    }, 500);
+  } else {
+    err.textContent = "Contraseña incorrecta. Intenta de nuevo.";
+    document.getElementById("passwordInput").classList.add("shake");
+    setTimeout(() => document.getElementById("passwordInput").classList.remove("shake"), 500);
+  }
+}
+
+function bootApp() {
+  // Navigation wiring
+  document.querySelectorAll("[data-panel]").forEach(btn => {
+    btn.addEventListener("click", () => navigateTo(btn.getAttribute("data-panel")));
+  });
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    sessionStorage.removeItem("sandys_auth");
+    location.reload();
+  });
+  // Uppercase perfume
+  document.getElementById("nombrePerfume").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
+  document.getElementById("pedidoNombre").addEventListener("input", function() { this.value = this.value.toUpperCase(); });
+  // Default dates
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById("fechaVenta").value = hoy;
+  document.getElementById("fechaGasto").value = hoy;
+  // Date in topbar
+  document.getElementById("panelDate").textContent = new Date().toLocaleDateString("es-MX", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+  // Theme
+  const savedTheme = localStorage.getItem("sandys_theme");
+  if (savedTheme === "dark") applyTheme(true);
+  // Subscriptions
+  iniciarSuscripciones();
+  renderPedidos();
+}
+
+// ==================== BOOT ====================
+if (sessionStorage.getItem("sandys_auth") === "true") {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("mainApp").style.display     = "block";
+  bootApp();
+} else {
+  document.getElementById("loginBtn").addEventListener("click", tryLogin);
+  document.getElementById("passwordInput").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
+}
+</script>
+</body>
+</html>
